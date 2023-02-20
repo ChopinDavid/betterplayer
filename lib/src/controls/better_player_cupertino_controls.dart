@@ -528,7 +528,8 @@ class _BetterPlayerCupertinoControlsState
           const SizedBox(
             width: 4,
           ),
-          if (_controlsConfiguration.enableOverflowMenu)
+          if (_controlsConfiguration.enableOverflowMenu &&
+              _controlsConfiguration.enableMore)
             _buildMoreButton(
               _controller,
               backgroundColor,
