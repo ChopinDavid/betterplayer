@@ -789,7 +789,7 @@ class _BetterPlayerCupertinoControlsState
                     right: buttonPadding,
                   ),
                   decoration: BoxDecoration(
-                    color: backgroundColor,
+                    color: backgroundColor.withOpacity(0.5),
                   ),
                   child: Center(
                     child: Icon(
