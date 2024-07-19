@@ -93,4 +93,10 @@ class MockBuildContext extends BuildContext {
 
   @override
   Widget get widget => throw UnimplementedError();
+
+  @override
+  T? getInheritedWidgetOfExactType<T extends InheritedWidget>() {
+    // TODO: implement getInheritedWidgetOfExactType
+    throw UnimplementedError();
+  }
 }
