@@ -12,6 +12,7 @@ class MockVideoPlayerController extends VideoPlayerController {
   int? trackWidth;
   int? trackHeight;
   int? trackBitrate;
+  bool isPipSupported = false;
 
   @override
   Future<void> play() async {
@@ -85,4 +86,9 @@ class MockVideoPlayerController extends VideoPlayerController {
     String? clearKey,
     String? videoExtension,
   }) async {}
+
+  @override
+  Future<bool?> isPictureInPictureSupported() {
+    return Future.value(isPipSupported);
+  }
 }
