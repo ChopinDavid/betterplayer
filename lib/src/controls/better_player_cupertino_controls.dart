@@ -403,7 +403,8 @@ class _BetterPlayerCupertinoControlsState extends BetterPlayerControlsState<Bett
           else
             const SizedBox(),
           const SizedBox(width: 4),
-          if (_controlsConfiguration.enableOverflowMenu)
+          if (_controlsConfiguration.enableOverflowMenu &&
+              _controlsConfiguration.enableMore)
             _buildMoreButton(_controller, backgroundColor, iconColor, barHeight, iconSize, buttonPadding)
           else
             const SizedBox(),
@@ -619,7 +620,7 @@ class _BetterPlayerCupertinoControlsState extends BetterPlayerControlsState<Bett
               child: Container(
                 height: barHeight,
                 padding: EdgeInsets.only(left: buttonPadding, right: buttonPadding),
-                decoration: BoxDecoration(color: backgroundColor.withValues(alpha: 0.5)),
+                decoration: BoxDecoration(color: backgroundColor),
                 child: Center(
                   child: Icon(_controlsConfiguration.pipMenuIcon, color: iconColor, size: iconSize),
                 ),

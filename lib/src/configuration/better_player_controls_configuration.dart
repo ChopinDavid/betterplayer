@@ -43,6 +43,7 @@ class BetterPlayerControlsConfiguration {
     this.enableQualities = true,
     this.enablePip = true,
     this.enableRetry = true,
+    this.enableMore = true,
     this.overflowMenuCustomItems = const [],
     this.overflowMenuIcon = Icons.more_vert_outlined,
     this.pipMenuIcon = Icons.picture_in_picture_outlined,
@@ -81,8 +82,8 @@ class BetterPlayerControlsConfiguration {
 
   ///Setup BetterPlayerControlsConfiguration based on Theme options.
   factory BetterPlayerControlsConfiguration.theme(ThemeData theme) => BetterPlayerControlsConfiguration(
-    textColor: theme.textTheme.bodyMedium?.color ?? Colors.white,
-    iconsColor: theme.textTheme.bodyMedium?.color ?? Colors.white,
+    textColor: theme.textTheme.bodyLarge?.color ?? Colors.white,
+    iconsColor: theme.textTheme.labelLarge?.color ?? Colors.white,
   );
 
   ///Color of the control bars
@@ -198,6 +199,9 @@ class BetterPlayerControlsConfiguration {
 
   ///Flag used to show/hide audio tracks
   final bool enableAudioTracks;
+
+  //Flag used to show/hide more button
+  final bool enableMore;
 
   ///Custom items of overflow menu
   final List<BetterPlayerOverflowMenuItem> overflowMenuCustomItems;

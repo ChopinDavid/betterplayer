@@ -172,7 +172,10 @@ class _BetterPlayerMaterialControlsState extends BetterPlayerControlsState<Bette
                       _buildPipButtonWrapperWidget(controlsNotVisible, _onPlayerHide)
                     else
                       const SizedBox(),
-                    _buildMoreButton(),
+                    if (_controlsConfiguration.enableMore)
+                      _buildMoreButton()
+                    else
+                      const SizedBox(),
                   ],
                 ),
               ),
