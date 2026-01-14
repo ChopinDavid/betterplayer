@@ -49,6 +49,28 @@ class _BetterPlayerState extends State<BetterPlayer> with WidgetsBindingObserver
   ///Subscription for controller events
   StreamSubscription<dynamic>? _controllerEventSubscription;
 
+  ///Store the original system UI overlay style before entering fullscreen
+  SystemUiOverlayStyle? _originalSystemUiOverlayStyle;
+
+  /// Helper method to determine the appropriate SystemUiOverlayStyle based on theme
+  SystemUiOverlayStyle _getSystemUiOverlayStyleFromTheme(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // Check if there's an explicit style set in the app bar theme
+    if (theme.appBarTheme.systemOverlayStyle != null) {
+      return theme.appBarTheme.systemOverlayStyle!;
+    }
+
+    // Fallback to determining from theme brightness
+    if (theme.brightness == Brightness.dark) {
+      return SystemUiOverlayStyle
+          .light; // Light status bar content for dark theme
+    } else {
+      return SystemUiOverlayStyle
+          .dark; // Dark status bar content for light theme
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -184,6 +206,9 @@ class _BetterPlayerState extends State<BetterPlayer> with WidgetsBindingObserver
       pageBuilder: _fullScreenRoutePageBuilder,
     );
 
+    // Store the current system UI overlay style based on theme
+    _originalSystemUiOverlayStyle = _getSystemUiOverlayStyleFromTheme(context);
+
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
     if (_betterPlayerConfiguration.autoDetectFullscreenDeviceOrientation) {
@@ -222,11 +247,23 @@ class _BetterPlayerState extends State<BetterPlayer> with WidgetsBindingObserver
     await SystemChrome.setPreferredOrientations(_betterPlayerConfiguration.deviceOrientationsAfterFullScreen);
   }
 
-  Widget _buildPlayer() => VisibilityDetector(
-    key: Key('${widget.controller.hashCode}_key'),
-    onVisibilityChanged: (VisibilityInfo info) => widget.controller.onPlayerVisibilityChanged(info.visibleFraction),
-    child: BetterPlayerWithControls(controller: widget.controller),
+  Widget _buildPlayer() {
+    // Determine the appropriate system UI overlay style
+    final systemUiOverlayStyle = _originalSystemUiOverlayStyle ??
+        _getSystemUiOverlayStyleFromTheme(context);
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: systemUiOverlayStyle,
+        child: VisibilityDetector(
+          key: Key("${widget.controller.hashCode}_key"),
+          onVisibilityChanged: (VisibilityInfo info) =>
+              widget.controller.onPlayerVisibilityChanged(info.visibleFraction),
+          child: BetterPlayerWithControls(
+            controller: widget.controller,
+          ),
+        ),
   );
+  }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
