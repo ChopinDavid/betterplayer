@@ -379,11 +379,13 @@ internal class BetterPlayer(
     ): MediaSource {
         val type: Int
         if (formatHint == null) {
-            var lastPathSegment = uri?.lastPathSegment
-            if (lastPathSegment == null) {
-                lastPathSegment = ""
+            val lastPathSegment = uri?.lastPathSegment.orEmpty()
+            val extension = lastPathSegment.substringAfterLast('.', "")
+            type = if (extension.isNotEmpty()) {
+                Util.inferContentTypeForExtension(extension)
+            } else {
+                if (uri != null) Util.inferContentType(uri) else C.CONTENT_TYPE_OTHER
             }
-            type = Util.inferContentTypeForExtension(lastPathSegment.split(".")[1])
         } else {
             type = when (formatHint) {
                 FORMAT_SS -> C.CONTENT_TYPE_SS
