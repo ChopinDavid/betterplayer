@@ -43,6 +43,9 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
         if #available(iOS 10.0, *) {
             self.player.automaticallyWaitsToMinimizeStalling = false
         }
+        if #available(iOS 12.0, *) {
+            self.player.preventsDisplaySleepDuringVideoPlayback = false
+        }
         self.observersAdded = false
         self.isInitialized = false
         self.isPlaying = false
