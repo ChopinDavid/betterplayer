@@ -118,6 +118,7 @@ internal class BetterPlayer(
             .setRenderersFactory(renderersFactory)
             .setTrackSelector(trackSelector)
             .setLoadControl(loadControl)
+            .setWakeMode(C.WAKE_MODE_NONE)
             .build()
         workManager = WorkManager.getInstance(context)
         workerObserverMap = HashMap()
