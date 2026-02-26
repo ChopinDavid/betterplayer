@@ -116,6 +116,7 @@ internal class BetterPlayer(
         exoPlayer = ExoPlayer.Builder(context)
             .setTrackSelector(trackSelector)
             .setLoadControl(loadControl)
+            .setWakeMode(C.WAKE_MODE_NONE)
             .build()
         workManager = WorkManager.getInstance(context)
         workerObserverMap = HashMap()
