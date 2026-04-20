@@ -427,13 +427,9 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
             result(nil)
         } else if speed < 0 || speed > 2.0 {
             result(FlutterError(code: "unsupported_speed", message: "Speed must be >= 0.0 and <= 2.0", details: nil))
-        } else if (speed > 1.0 && (player.currentItem?.canPlayFastForward ?? false)) || (speed < 1.0 && (player.currentItem?.canPlaySlowForward ?? false)) {
+        } else {
             playerRate = Float(speed)
             result(nil)
-        } else {
-            if speed <= 1.0 {
-                result(FlutterError(code: "unsupported_slow_forward", message: "This video cannot be played slow forward", details: nil))
-            }
         }
 
         if isPlaying {
