@@ -64,7 +64,8 @@ abstract class BetterPlayerControlsState<T extends StatefulWidget> extends State
       child: Container(
         child: Column(
           children: [
-            if (betterPlayerControlsConfiguration.enablePlaybackSpeed)
+            if (betterPlayerControlsConfiguration.enablePlaybackSpeed &&
+                !(betterPlayerController?.isLiveStream() ?? false))
               _buildMoreOptionsListRow(
                 betterPlayerControlsConfiguration.playbackSpeedIcon,
                 translations.overflowMenuPlaybackSpeed,
