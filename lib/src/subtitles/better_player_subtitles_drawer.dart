@@ -128,11 +128,14 @@ class _BetterPlayerSubtitlesDrawerState extends State<BetterPlayerSubtitlesDrawe
 
   Widget _getTextWithStroke(String subtitleText) => ColoredBox(
     color: _configuration!.backgroundColor,
-    child: Stack(
-      children: [
-        if (_configuration!.outlineEnabled) _buildHtmlWidget(subtitleText, _outerTextStyle) else const SizedBox(),
-        _buildHtmlWidget(subtitleText, _innerTextStyle),
-      ],
+    child: Padding(
+      padding: EdgeInsets.symmetric(horizontal: _configuration!.textBackgroundHorizontalPadding),
+      child: Stack(
+        children: [
+          if (_configuration!.outlineEnabled) _buildHtmlWidget(subtitleText, _outerTextStyle) else const SizedBox(),
+          _buildHtmlWidget(subtitleText, _innerTextStyle),
+        ],
+      ),
     ),
   );
 
