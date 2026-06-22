@@ -36,6 +36,14 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
     private var pipController: AVPictureInPictureController?
     private var restoreUIOnPipStop: ((Bool) -> Void)?
 
+    /// Gate for EventChannel emissions. True only between configuring a live
+    /// player item and tearing it down — a stale AVPlayer must not emit.
+    private var canSendEvents: Bool = false
+    /// True while the app is backgrounded. The FlutterEngine bound to this
+    /// player's channel may be stopped while backgrounded, and sending on a
+    /// stopped engine throws NSInternalInconsistencyException (fatal).
+    private var isAppInBackground: Bool = false
+
     public override init() {
         self.player = AVPlayer()
         super.init()
@@ -50,6 +58,8 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
         self.isInitialized = false
         self.isPlaying = false
         self.disposed = false
+        NotificationCenter.default.addObserver(self, selector: #selector(handleAppDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleAppDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
 
     public convenience init(frame: CGRect) {
@@ -86,9 +96,29 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
             player.currentItem?.removeObserver(self, forKeyPath: "playbackLikelyToKeepUp", context: &playbackLikelyToKeepUpContext)
             player.currentItem?.removeObserver(self, forKeyPath: "playbackBufferEmpty", context: &playbackBufferEmptyContext)
             player.currentItem?.removeObserver(self, forKeyPath: "playbackBufferFull", context: &playbackBufferFullContext)
-            NotificationCenter.default.removeObserver(self)
+            NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
             observersAdded = false
         }
+    }
+
+    deinit {
+        // Removes the app-lifecycle observers registered in init, plus any
+        // remaining KVO/notification observers, so a deallocating player can
+        // never deliver a late callback that sends on a stopped engine.
+        NotificationCenter.default.removeObserver(self)
+        removeObservers()
+    }
+
+    @objc private func handleAppDidEnterBackground() { isAppInBackground = true }
+    @objc private func handleAppDidBecomeActive() { isAppInBackground = false }
+
+    /// Single funnel for every EventChannel emission. No-ops once the player is
+    /// torn down (`canSendEvents`), while the app is backgrounded (the engine
+    /// may be stopped — sending then throws NSInternalInconsistencyException),
+    /// or when no listener is attached (`eventSink`).
+    private func sendEvent(_ event: Any) {
+        guard canSendEvents, !isAppInBackground, let sink = eventSink else { return }
+        sink(event)
     }
 
     @objc private func itemDidPlayToEndTime(_ notification: Notification) {
@@ -97,10 +127,8 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
                 p.seek(to: .zero, completionHandler: nil)
             }
         } else {
-            if let eventSink = eventSink {
-                eventSink(["event": "completed", "key": key as Any])
-                removeObservers()
-            }
+            sendEvent(["event": "completed", "key": key as Any])
+            removeObservers()
         }
     }
 
@@ -214,6 +242,7 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
             }
         }
         addObservers(item)
+        canSendEvents = true
     }
 
     private func handleStalled() {
@@ -229,10 +258,8 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
             } else {
                 stalledCount += 1
                 if stalledCount > 60 {
-                    if let eventSink = eventSink {
-                        let error = FlutterError(code: "VideoError", message: "Failed to load video: playback stalled", details: nil)
-                        eventSink(error)
-                    }
+                    let error = FlutterError(code: "VideoError", message: "Failed to load video: playback stalled", details: nil)
+                    sendEvent(error)
                     return
                 }
                 perform(#selector(startStalledCheckObjC), with: nil, afterDelay: 1)
@@ -257,12 +284,12 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
                 }
                 if player.timeControlStatus == .paused {
                     lastAvPlayerTimeControlStatus = player.timeControlStatus
-                    eventSink?(["event": "pause"])
+                    sendEvent(["event": "pause"])
                     return
                 }
                 if player.timeControlStatus == .playing {
                     lastAvPlayerTimeControlStatus = player.timeControlStatus
-                    eventSink?(["event": "play"])
+                    sendEvent(["event": "play"])
                 }
             }
 
@@ -272,7 +299,7 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
         }
 
         if context == &timeRangeContext {
-            if let eventSink = eventSink, let item = object as? AVPlayerItem {
+            if let item = object as? AVPlayerItem {
                 var values: [[NSNumber]] = []
                 for rangeValue in item.loadedTimeRanges {
                     let range = rangeValue.timeRangeValue
@@ -284,7 +311,7 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
                     }
                     values.append([start, end])
                 }
-                eventSink(["event": "bufferingUpdate", "values": values, "key": key as Any])
+                sendEvent(["event": "bufferingUpdate", "values": values, "key": key as Any])
             }
         } else if context == &presentationSizeContext {
             onReadyToPlay()
@@ -293,11 +320,9 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
                 switch item.status {
                 case .failed:
                     NSLog("Failed to load video: \(String(describing: item.error?.localizedDescription))")
-                    if let eventSink = eventSink {
-                        let message = "Failed to load video: \(item.error?.localizedDescription ?? "unknown")"
-                        let error = FlutterError(code: "VideoError", message: message, details: nil)
-                        eventSink(error)
-                    }
+                    let message = "Failed to load video: \(item.error?.localizedDescription ?? "unknown")"
+                    let error = FlutterError(code: "VideoError", message: message, details: nil)
+                    sendEvent(error)
                 case .unknown:
                     break
                 case .readyToPlay:
@@ -309,12 +334,12 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
         } else if context == &playbackLikelyToKeepUpContext {
             if player.currentItem?.isPlaybackLikelyToKeepUp == true {
                 updatePlayingState()
-                eventSink?(["event": "bufferingEnd", "key": key as Any])
+                sendEvent(["event": "bufferingEnd", "key": key as Any])
             }
         } else if context == &playbackBufferEmptyContext {
-            eventSink?(["event": "bufferingStart", "key": key as Any])
+            sendEvent(["event": "bufferingStart", "key": key as Any])
         } else if context == &playbackBufferFullContext {
-            eventSink?(["event": "bufferingEnd", "key": key as Any])
+            sendEvent(["event": "bufferingEnd", "key": key as Any])
         }
     }
 
@@ -335,7 +360,7 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
     }
 
     public func onReadyToPlay() {
-        guard let eventSink = eventSink, !isInitialized, key != nil else { return }
+        guard eventSink != nil, !isInitialized, key != nil else { return }
         guard player.currentItem != nil else { return }
         guard player.status == .readyToPlay else { return }
 
@@ -366,7 +391,7 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
 
         isInitialized = true
         updatePlayingState()
-        eventSink(["event": "initialized",
+        sendEvent(["event": "initialized",
                    "duration": NSNumber(value: duration()),
                    "width": NSNumber(value: Float(width)),
                    "height": NSNumber(value: Float(height)),
@@ -522,7 +547,7 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
         if let layer = playerLayerRef {
             layer.removeFromSuperlayer()
             playerLayerRef = nil
-            eventSink?(["event": "pipStop"])
+            sendEvent(["event": "pipStop"])
         }
     }
 
@@ -532,7 +557,7 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
     }
 
     public func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        eventSink?(["event": "pipStart"])
+        sendEvent(["event": "pipStart"])
     }
 
     public func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void) {
@@ -576,10 +601,12 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
     public func clear() {
         isInitialized = false
         isPlaying = false
-        disposed = false
+        canSendEvents = false
         failedCount = 0
         key = nil
-        guard player.currentItem != nil else { return }
+        // Always remove observers (incl. the player-level "rate" observer) so a
+        // stale AVPlayer cannot deliver a late KVO callback after teardown, even
+        // when currentItem is already nil.
         removeObservers()
         player.currentItem?.asset.cancelLoading()
     }
@@ -591,11 +618,16 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
     }
 
     public func dispose() {
-        pause()
+        // Close the emission gate and detach observers *before* anything that
+        // could trigger a KVO callback (pausing the player fires "rate"), so no
+        // event is sent on a possibly-stopped engine during teardown.
+        canSendEvents = false
+        disposed = true
+        removeObservers()
+        player.pause()
         disposeSansEventChannel()
         eventChannel?.setStreamHandler(nil)
         disablePictureInPicture()
         setPictureInPicture(false)
-        disposed = true
     }
 }
