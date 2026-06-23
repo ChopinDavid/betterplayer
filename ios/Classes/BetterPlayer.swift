@@ -250,6 +250,11 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
     }
 
     public override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        let appState = UIApplication.shared.applicationState
+        // AVPlayer KVO callbacks continue firing after the FlutterEngine is stopped when
+        // the app enters the background. Sending on a stopped engine throws an
+        // NSInternalInconsistencyException, so we drop all events in that state.
+        guard appState != .background else { return }
         if keyPath == "rate" {
             if #available(iOS 10.0, *), let pipController = pipController, pipController.isPictureInPictureActive {
                 if let last = lastAvPlayerTimeControlStatus, last == player.timeControlStatus {
@@ -335,7 +340,9 @@ public class BetterPlayer: NSObject, FlutterPlatformView, FlutterStreamHandler, 
     }
 
     public func onReadyToPlay() {
-        guard let eventSink = eventSink, !isInitialized, key != nil else { return }
+        guard let eventSink = eventSink, !isInitialized, key != nil else {
+            return
+        }
         guard player.currentItem != nil else { return }
         guard player.status == .readyToPlay else { return }
 
