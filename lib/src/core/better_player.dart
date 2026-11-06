@@ -112,13 +112,17 @@ class _BetterPlayerState extends State<BetterPlayer> with WidgetsBindingObserver
     ///full screen is on, then full screen route must be pop and return to normal
     ///state.
     if (_isFullScreen) {
-      WakelockPlus.disable();
       _navigatorState.maybePop();
-      SystemChrome.setEnabledSystemUIMode(
-        SystemUiMode.manual,
-        overlays: _betterPlayerConfiguration.systemOverlaysAfterFullScreen,
-      );
-      SystemChrome.setPreferredOrientations(_betterPlayerConfiguration.deviceOrientationsAfterFullScreen);
+      // A PiP-induced fullscreen changed none of these, so there is nothing
+      // to restore (see _pushFullScreenWidget).
+      if (!widget.controller.isFullScreenForPip) {
+        WakelockPlus.disable();
+        SystemChrome.setEnabledSystemUIMode(
+          SystemUiMode.manual,
+          overlays: _betterPlayerConfiguration.systemOverlaysAfterFullScreen,
+        );
+        SystemChrome.setPreferredOrientations(_betterPlayerConfiguration.deviceOrientationsAfterFullScreen);
+      }
     }
 
     WidgetsBinding.instance.removeObserver(this);
@@ -208,31 +212,45 @@ class _BetterPlayerState extends State<BetterPlayer> with WidgetsBindingObserver
     // Store the current system UI overlay style based on theme
     _originalSystemUiOverlayStyle = _getSystemUiOverlayStyleFromTheme(context);
 
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // A fullscreen entered for Android picture-in-picture only exists so the
+    // video fills the PiP window. The activity is being pinned at that
+    // moment, and a rotation, system UI or wakelock request landing inside
+    // that window-manager transition wedges the system PiP controller, so
+    // the route is pushed with none of the usual side effects and nothing is
+    // restored when it pops.
+    final bool forPip = widget.controller.isFullScreenForPip;
 
-    if (_betterPlayerConfiguration.autoDetectFullscreenDeviceOrientation) {
-      final aspectRatio = widget.controller.videoPlayerController?.value.aspectRatio ?? 1.0;
-      List<DeviceOrientation> deviceOrientations;
-      if (aspectRatio < 1.0) {
-        deviceOrientations = [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown];
+    if (!forPip) {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
+      if (_betterPlayerConfiguration.autoDetectFullscreenDeviceOrientation) {
+        final aspectRatio = widget.controller.videoPlayerController?.value.aspectRatio ?? 1.0;
+        List<DeviceOrientation> deviceOrientations;
+        if (aspectRatio < 1.0) {
+          deviceOrientations = [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown];
+        } else {
+          deviceOrientations = [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight];
+        }
+        await SystemChrome.setPreferredOrientations(deviceOrientations);
       } else {
-        deviceOrientations = [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight];
+        await SystemChrome.setPreferredOrientations(
+          widget.controller.betterPlayerConfiguration.deviceOrientationsOnFullScreen,
+        );
       }
-      await SystemChrome.setPreferredOrientations(deviceOrientations);
-    } else {
-      await SystemChrome.setPreferredOrientations(
-        widget.controller.betterPlayerConfiguration.deviceOrientationsOnFullScreen,
-      );
-    }
 
-    if (!_betterPlayerConfiguration.allowedScreenSleep) {
-      await WakelockPlus.enable();
+      if (!_betterPlayerConfiguration.allowedScreenSleep) {
+        await WakelockPlus.enable();
+      }
     }
 
     if (context.mounted) {
       await Navigator.of(context, rootNavigator: true).push(route);
       _isFullScreen = false;
       widget.controller.backFromFullScreen();
+    }
+
+    if (forPip) {
+      return;
     }
 
     // The wakelock plugins checks whether it needs to perform an action internally,

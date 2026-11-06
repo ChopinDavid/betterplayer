@@ -16,6 +16,9 @@ class MockMethodChannel {
     if (methodCall.method == 'setDataSource') {
       //return
     }
+    if (methodCall.method == 'isPictureInPictureSupported') {
+      return true;
+    }
     return <String, String>{};
   }
 
