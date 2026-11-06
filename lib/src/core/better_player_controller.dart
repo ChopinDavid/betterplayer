@@ -163,6 +163,16 @@ class BetterPlayerController {
   ///Was controls enabled before Picture in Picture opened.
   bool _wasControlsEnabledBeforePiP = false;
 
+  ///Whether the current fullscreen was entered by [enablePictureInPicture] on
+  ///Android (so the video fills the PiP window) rather than by the user.
+  ///Such a fullscreen must not request orientation, system UI or wakelock
+  ///changes: the activity is being pinned, and a rotation request landing
+  ///inside that window-manager transition wedges the system PiP controller.
+  bool _isFullScreenForPip = false;
+
+  ///Whether the current fullscreen was entered for Android picture-in-picture.
+  bool get isFullScreenForPip => _isFullScreenForPip;
+
   ///GlobalKey of the BetterPlayer widget
   GlobalKey? _betterPlayerGlobalKey;
 
@@ -744,6 +754,7 @@ class BetterPlayerController {
       if (!_wasInFullScreenBeforePiP) {
         exitFullScreen();
       }
+      _isFullScreenForPip = false;
       if (_wasControlsEnabledBeforePiP) {
         setControlsEnabled(true);
       }
@@ -1010,8 +1021,11 @@ class BetterPlayerController {
       if (defaultTargetPlatform == TargetPlatform.android) {
         _wasInFullScreenBeforePiP = _isFullScreen;
         await videoPlayerController?.enablePictureInPicture(left: 0, top: 0, width: 0, height: 0);
-        enterFullScreen();
+        // Posted before the fullscreen so listeners can tell a PiP-induced
+        // fullscreen apart from one the user asked for.
         _postEvent(BetterPlayerEvent(BetterPlayerEventType.pipStart));
+        _isFullScreenForPip = !_wasInFullScreenBeforePiP;
+        enterFullScreen();
         return;
       }
       if (defaultTargetPlatform == TargetPlatform.iOS) {
