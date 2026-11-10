@@ -400,7 +400,7 @@ void main() {
       await subscription.cancel();
     });
 
-    test("enablePictureInPicture sends event on iOS", () async {
+    test('enablePictureInPicture sends event on iOS', () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       final BetterPlayerController betterPlayerMockController =
       BetterPlayerTestUtils.setupBetterPlayerMockController();
@@ -409,7 +409,7 @@ void main() {
       mockVideoPlayerController.isPipSupported = true;
       betterPlayerMockController.videoPlayerController =
           mockVideoPlayerController;
-      final mockGlobalKey = MockGlobalKey();
+      const mockGlobalKey = MockGlobalKey();
       int pipStartCalls = 0;
       betterPlayerMockController.addEventsListener((event) {
         if (event.betterPlayerEventType == BetterPlayerEventType.pipStart) {
@@ -421,7 +421,7 @@ void main() {
       expect(pipStartCalls, 1);
     });
 
-    test("enablePictureInPicture sends event on Android", () async {
+    test('enablePictureInPicture sends event on Android', () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       final BetterPlayerController betterPlayerMockController =
       BetterPlayerTestUtils.setupBetterPlayerMockController();
@@ -430,7 +430,7 @@ void main() {
       mockVideoPlayerController.isPipSupported = true;
       betterPlayerMockController.videoPlayerController =
           mockVideoPlayerController;
-      final mockGlobalKey = MockGlobalKey();
+      const mockGlobalKey = MockGlobalKey();
       int pipStartCalls = 0;
       betterPlayerMockController.addEventsListener((event) {
         if (event.betterPlayerEventType == BetterPlayerEventType.pipStart) {

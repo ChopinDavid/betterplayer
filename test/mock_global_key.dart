@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'mock_build_context.dart';
 
 class MockGlobalKey extends GlobalKey {
-  MockGlobalKey() : super.constructor();
+  const new() : super.constructor();
 
   @override
   BuildContext? get currentContext => MockBuildContext();

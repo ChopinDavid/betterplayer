@@ -1,9 +1,8 @@
 import 'package:better_player_plus/better_player_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:visibility_detector/visibility_detector.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'better_player_mock_controller.dart';
 import 'better_player_test_utils.dart';
@@ -68,7 +67,7 @@ void main() {
         }
       });
 
-      await controller.enablePictureInPicture(MockGlobalKey());
+      await controller.enablePictureInPicture(const MockGlobalKey());
 
       expect(fullScreenWhenPipStarted, isFalse);
       expect(controller.isFullScreen, isTrue);
@@ -78,7 +77,7 @@ void main() {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       final controller = await setupPipCapableController();
 
-      await controller.enablePictureInPicture(MockGlobalKey());
+      await controller.enablePictureInPicture(const MockGlobalKey());
 
       expect(controller.isFullScreenForPip, isTrue);
     });
@@ -87,7 +86,7 @@ void main() {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       final controller = await setupPipCapableController();
 
-      await controller.enablePictureInPicture(MockGlobalKey());
+      await controller.enablePictureInPicture(const MockGlobalKey());
 
       expect(controller.isFullScreen, isFalse);
       expect(controller.isFullScreenForPip, isFalse);
@@ -96,7 +95,7 @@ void main() {
     test('exits fullscreen and clears the PiP flag when PiP ends', () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       final controller = await setupPipCapableController();
-      await controller.enablePictureInPicture(MockGlobalKey());
+      await controller.enablePictureInPicture(const MockGlobalKey());
 
       simulatePipEnded(controller);
 
@@ -161,7 +160,7 @@ void main() {
     testWidgets('pushes the fullscreen route without orientation or system UI requests', (WidgetTester tester) async {
       final controller = await pumpPlayer(tester);
 
-      await controller.enablePictureInPicture(MockGlobalKey());
+      await controller.enablePictureInPicture(const MockGlobalKey());
       await pumpTransition(tester);
 
       expect(navigatorOf(tester).canPop(), isTrue);
@@ -188,7 +187,7 @@ void main() {
     testWidgets('leaving PiP pops the fullscreen route without restoring orientation '
         'or system UI', (WidgetTester tester) async {
       final controller = await pumpPlayer(tester);
-      await controller.enablePictureInPicture(MockGlobalKey());
+      await controller.enablePictureInPicture(const MockGlobalKey());
       await pumpTransition(tester);
       platformCalls.clear();
 

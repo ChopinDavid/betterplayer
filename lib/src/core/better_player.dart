@@ -272,7 +272,7 @@ class _BetterPlayerState extends State<BetterPlayer> with WidgetsBindingObserver
     return AnnotatedRegion<SystemUiOverlayStyle>(
         value: systemUiOverlayStyle,
         child: VisibilityDetector(
-          key: Key("${widget.controller.hashCode}_key"),
+          key: Key('${widget.controller.hashCode}_key'),
           onVisibilityChanged: (VisibilityInfo info) =>
               widget.controller.onPlayerVisibilityChanged(info.visibleFraction),
           child: BetterPlayerWithControls(

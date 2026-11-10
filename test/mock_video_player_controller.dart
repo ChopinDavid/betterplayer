@@ -88,7 +88,5 @@ class MockVideoPlayerController extends VideoPlayerController {
   }) async {}
 
   @override
-  Future<bool?> isPictureInPictureSupported() {
-    return Future.value(isPipSupported);
-  }
+  Future<bool?> isPictureInPictureSupported() => Future.value(isPipSupported);
 }

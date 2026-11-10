@@ -61,9 +61,7 @@ class MockBuildContext extends BuildContext {
   }
 
   @override
-  RenderObject? findRenderObject() {
-    return MockRenderBox();
-  }
+  RenderObject? findRenderObject() => MockRenderBox();
 
   @override
   T? findRootAncestorStateOfType<T extends State<StatefulWidget>>() {
@@ -96,7 +94,6 @@ class MockBuildContext extends BuildContext {
 
   @override
   T? getInheritedWidgetOfExactType<T extends InheritedWidget>() {
-    // TODO: implement getInheritedWidgetOfExactType
     throw UnimplementedError();
   }
 }
