@@ -15,7 +15,6 @@ It solves many common use cases out of the box and is easy to integrate.
   s.source           = { :path => '.' }
   s.source_files = 'better_player_plus/Sources/better_player_plus/**/*'
   s.exclude_files = 'better_player_plus/Sources/better_player_plus/BetterPlayerPlugin.{h,m}'
-  s.public_header_files = 'better_player_plus/Sources/better_player_plus/**/*.h'
   s.dependency 'Flutter'
   s.dependency 'Cache', '~> 6.0.0'
   
